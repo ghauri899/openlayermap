@@ -37,7 +37,10 @@ function App() {
   const mapRef = useRef();
   mapRef.current = map;
   const tileLayer = new TileLayer({
-    source: new OSM(),
+    source: new OSM({
+        url: "https://api.mapbox.com/styles/v1/usman-ghauri/cl38ebe0r000816nyb6w4dmiz/draft/tiles/{z}/{x}/{y}?access_token="+key
+    }),
+     
   });
   const style = new Style({
     fill: new Fill({
@@ -74,6 +77,7 @@ function App() {
           width: 2,
         }),
       }),
+    
   });
 
 
@@ -90,7 +94,8 @@ function App() {
           "{z}/{x}/{y}.vector.pbf?access_token=" +
           key,
       }),
-      // style: createMapboxStreetsV6Style(Style, Fill, Stroke, Icon, Text),TODO: You can styles it as you want using mapbox
+       //style: createMapboxStreetsV6Style(Style, Fill, Stroke, Icon, Text),
+       //TODO: You can styles it as you want using mapbox
     });
   const mapview = new View({
     center: [0, 0],
@@ -110,15 +115,7 @@ function App() {
     let initialMap = new Map({
       target: mapElement.current,
       interactions: defaultInteractions().extend([new DragRotateAndZoom()]),
-      controls: defaults().extend([
-        new ScaleLine(),
-        new Rotate(),
-        new FullScreen(),
-        new ZoomSlider(),
-        new ZoomToExtent(),
-        new MousePosition(),
-        new OverviewMap(), 
-      ]),
+      controls: functions,
       layers: [tileLayer, vectorLayer],
       view: mapview,
     });
