@@ -20,6 +20,9 @@ import {
 import {
   DragRotateAndZoom,
   defaults as defaultInteractions,
+  Modify,
+  Draw,
+  Snap,
 } from "ol/interaction";
 import VectorLayer from "ol/layer/Vector";
 import VectorSource from "ol/source/Vector";
@@ -30,7 +33,6 @@ import { Fragment } from "react/cjs/react.production.min";
 import { Feature } from "ol";
 import Point from "ol/geom/Point";
 import { transform } from "ol/proj";
-
 import { Circle, Fill, Icon, Stroke, Style } from "ol/style";
 function App() {
   const key =
@@ -42,10 +44,19 @@ function App() {
   });
 
   const [map, setMap] = useState();
+  const [source, setSource] = useState(
+    new VectorSource({
+      //uncomment following line to include portland.json
+      url: portland,
+      //url: "https://openlayers.org/data/vector/ecoregions.json",
+      format: new GeoJSON(),
+    })
+  );
   const mapElement = useRef();
   const mapRef = useRef();
   mapRef.current = map;
-
+  let modify = Modify;
+  let draw = Draw;
   let styles = {
     Point: new Style({
       image: image,
@@ -135,12 +146,7 @@ function App() {
   //   });
 
   const vectorLayer = new VectorLayer({
-    source: new VectorSource({
-      //uncomment following line to include portland.json
-      url: portland,
-      //   url: "https://openlayers.org/data/vector/ecoregions.json",
-      format: new GeoJSON(),
-    }),
+    source,
     style: (feature) => {
       return styles[feature.getGeometry().getType()];
     },
@@ -168,6 +174,7 @@ function App() {
   });
   const mapview = new View({
     center: [0, 0],
+
     zoom: 2,
   });
   const functions = defaults().extend([
@@ -193,67 +200,45 @@ function App() {
       target: mapElement.current,
       interactions: defaultInteractions().extend([new DragRotateAndZoom()]),
       controls: functions,
-      layers: [tileLayer, vectorLayer, vectorTileLayer ],
+      layers: [tileLayer, vectorLayer, vectorTileLayer, second_vectorTileLayer],
       view: mapview,
     });
-    //addFeature();
     setMap(initialMap);
   }, []);
 
+  useEffect(() => {
+    if (map) {
+      map.addInteraction(new Snap({ source }));
+      draw = new Draw({
+        source,
+        type: "Point",
+      });
+      map.addInteraction(draw);
+      draw.on("drawstart", () => {
+        console.log("inside draw on");
+      });
+      draw.on("drawend", () => {
+        console.log("inside draw end");
+      });
+
+      modify = new Modify({ source });
+
+      modify.on("modifystart", (event) => {});
+
+      addFeature();
+      map.on("click", () => {
+        console.log("postclick,");
+      });
+    }
+  }, [map]);
+
   //dd
-
-  //this commented code is for hovering over map
-  // const featureOverlay = new VectorLayer({
-  //     source: new VectorSource(),
-  //     map: initialMap,
-  //     style: new Style({
-  //       stroke: new Stroke({
-  //         color: 'rgba(255, 255, 255, 0.7)',
-  //         width: 2,
-  //       }),
-  //     }),
-  //   });
-
-  //   let highlight;
-  //   const displayFeatureInfo = function (pixel) {
-  //     const feature = initialMap.forEachFeatureAtPixel(pixel, function (feature) {
-  //       return feature;
-  //     });
-
-  //     const info = document.getElementById('info');
-  //     if (feature) {
-  //       info.innerHTML = feature.get('ECO_NAME') || '&nbsp;';
-  //     } else {
-  //       info.innerHTML = '&nbsp;';
-  //     }
-
-  //     if (feature !== highlight) {
-  //       if (highlight) {
-  //         featureOverlay.getSource().removeFeature(highlight);
-  //       }
-  //       if (feature) {
-  //         featureOverlay.getSource().addFeature(feature);
-  //       }
-  //       highlight = feature;
-  //     }
-  //   };
-
-  //   initialMap.on('pointermove', function (evt) {
-  //     if (evt.dragging) {
-  //       return;
-  //     }
-  //     const pixel = initialMap.getEventPixel(evt.originalEvent);
-  //     displayFeatureInfo(pixel);
-  //   });
-
-  //   initialMap. ('click', function (evt) {
-  //     displayFeatureInfo(evt.pixel);
-  //   });
-
   //dd
 
   const addFeature = () => {
-    let markerFeature = new Feature({ geometry: new Point([0, 0]) });
+    let markerFeature = new Feature({
+      geometry: new Point([7579648.5988, 3416429.4162]),
+    });
     let layer;
     map.getLayers().forEach((lr) => {
       if (lr.getProperties()["id"] === "main-layer") {
@@ -280,26 +265,55 @@ function App() {
     feature.getGeometry().transform("EPSG:4326", "EPSG:3857");
   };
   const showHideLayer = (event) => {
-      debugger;
     map.getLayers().forEach((lr) => {
       if (lr.getProperties()["id"] === "main-layer") {
         lr.setVisible(event.target.checked);
       }
     });
   };
-
+  const manageInteractions = (event) => {
+    
+    if (event.target.value === "draw") {
+      map.addInteraction(draw);
+      map.removeInteraction(modify);
+    } else {
+      map.removeInteraction(draw);
+      map.addInteraction(modify);
+    }
+  };
   return (
     <Fragment>
       <div className="map" ref={mapElement} />
       <div id="info" className="layer-switcher">
-        <input
-          type="checkbox"
-          name="main-layer"
-          id="lr"
-          defaultChecked
-          onClick={showHideLayer}
-        />
-        <label for="lr">Show/Hide Main Layer</label>
+        <div>
+          <input
+            type="checkbox"
+            name="main-layer"
+            id="lr"
+            defaultChecked
+            onClick={showHideLayer}
+          />
+          <label htmlFor="lr">Show/Hide Main Layer</label>
+        </div>
+        <div>
+          <input
+            type="radio"
+            name="interactions"
+            value="draw"
+            id="r-lr"
+            defaultChecked
+            onChange={manageInteractions}
+          />
+          <label>Draw</label>
+          <input
+            type="radio"
+            name="interactions"
+            value="modify"
+            id="r1-lr"
+            onChange={manageInteractions}
+          />
+          <label for="r1-lr">Modify</label>
+        </div>
       </div>
     </Fragment>
   );
