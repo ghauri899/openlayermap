@@ -34,6 +34,7 @@ import { Feature } from "ol";
 import Point from "ol/geom/Point";
 import { transform } from "ol/proj";
 import { Circle, Fill, Icon, Stroke, Style } from "ol/style";
+
 function App() {
   const key =
     "pk.eyJ1IjoidXNtYW4tZ2hhdXJpIiwiYSI6ImNsMzRnNm9lczE3MzMzZHBmejFwb3RtNHgifQ.x89dbT1H4iK7NQaKnkbxQw";
@@ -211,7 +212,7 @@ function App() {
       map.addInteraction(new Snap({ source }));
       draw = new Draw({
         source,
-        type: "Point",
+        type: "Circle",
       });
       map.addInteraction(draw);
       draw.on("drawstart", () => {
@@ -271,8 +272,8 @@ function App() {
       }
     });
   };
-  const manageInteractions = (event) => {
-    
+  const manageInteractions = (event,age =5) => {
+   console.log(event.target.id , event.target.value,age)
     if (event.target.value === "draw") {
       map.addInteraction(draw);
       map.removeInteraction(modify);
@@ -290,6 +291,7 @@ function App() {
             type="checkbox"
             name="main-layer"
             id="lr"
+            age ="s"
             defaultChecked
             onClick={showHideLayer}
           />
@@ -312,7 +314,7 @@ function App() {
             id="r1-lr"
             onChange={manageInteractions}
           />
-          <label for="r1-lr">Modify</label>
+          <label htmlFor="r1-lr">Modify</label>
         </div>
       </div>
     </Fragment>
